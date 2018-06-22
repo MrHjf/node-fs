@@ -6,6 +6,7 @@ const os = require('os');
 
 const app = express();
 const root = 'd:';
+const port = 3001;
 var destPath = os.platform() === 'linux' ? '/home/myFile/' : 'd:\\file\\';
 
 function getIpConfig() {
@@ -26,6 +27,12 @@ function getIpConfig() {
                 }
             }
         }
+    } else if (process.platform === 'linux') {
+	    for (var i = 0; i< os.networkInterfaces().ens3.length;i++) {
+		                if (os.networkInterfaces().ens3[i].family == 'IPv4') {
+					                IPv4 = os.networkInterfaces().ens3[i].address;
+					            }
+		            } 
     }
     return IPv4;
 }
@@ -69,12 +76,14 @@ app.post('/upload', upload.single('file'), function(req, res, next) {
     console.log('原始文件名：%s', file.originalname);
     console.log('文件大小：%s', file.size);
     console.log('文件保存路径：%s', file.path);
-    const imgUrl = 'http://' + host + ":3001/file/" + file.filename;
+	 const dir = os.platform() === 'win32' ? '/file/' : '/home/myFile/';
+    const imgUrl = 'http://' + host + ":" + port + dir + file.filename;
     res.send({ret_code: '0', img_url: imgUrl});
 });
 
-app.get(/^\/file\/(.*)\.(png|jpg|gif|jpge)$/, function(req, res, next) {
-    const path = root + Object.keys(queryString.parse(req.url))[0].replace(/\//g, '\\');
+app.get(/^\/(file|home\/myFile)\/(.*)\.(png|jpg|gif|jpge)$/, function(req, res, next) {
+    var path = Object.keys(queryString.parse(req.url))[0];
+	if (os.platform() === 'win32') path = root + path;
     fs.stat(path, function(err, stats) {
         if (err) res.end('not found');
         else {
@@ -84,4 +93,4 @@ app.get(/^\/file\/(.*)\.(png|jpg|gif|jpge)$/, function(req, res, next) {
     })
 })
 
-app.listen(3001);
+app.listen(port);
